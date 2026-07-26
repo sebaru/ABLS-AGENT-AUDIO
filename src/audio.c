@@ -111,6 +111,8 @@ gint main(gint argc, gchar *argv[])
 
    Play_google_speech(agent, "Module audio demarre");
 
+   Agent_is_ready ( agent );
+
    while (agent->Agent_run == AGENT_IS_RUNNING)
     { Agent_loop(agent);
 /****************************************************** Ecoute du master ******************************************************/
