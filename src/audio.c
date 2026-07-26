@@ -135,22 +135,9 @@ gint main(gint argc, gchar *argv[])
 /****************************************************** Ecoute de l'api *******************************************************/
       JsonNode *mqtt_api_message;
       while ((mqtt_api_message = Agent_get_mqtt_api_message(agent)) != NULL)
-       { if ( Mqtt_topic_is ( mqtt_api_message, 4, "+", "AGENT", agent->tech_id, "TEST" ) )
+       { if ( Mqtt_topic_is ( mqtt_api_message, 4, "+", "AGENT", agent->agent_tech_id, "TEST" ) )
           { Info(__func__, agent->agent_classe, agent->agent_tech_id, LOG_NOTICE, "Saying 'test'");
             Play_google_speech(agent, "Ceci est un test");
-          }
-         else if (Mqtt_topic_is(mqtt_api_message, 2, "AUDIO_ZONE", "+") && Json_has_member(mqtt_api_message, "audio_libelle"))
-          { gchar *audio_zone_name = Json_get_string(mqtt_api_message, "mqtt_topic_lvl1");
-            gchar *audio_libelle = Json_get_string(mqtt_api_message, "audio_libelle");
-            time_t now = time(NULL);
-
-            Info(__func__, agent->agent_classe, agent->agent_tech_id, LOG_INFO, "Saying '%s' on audio_zone '%s'",
-                 audio_libelle, (audio_zone_name ? audio_zone_name : "unknown"));
-
-            if (vars->last_audio + AUDIO_JINGLE < now)
-             { Play_google_speech(agent, "Attention"); }
-            vars->last_audio = now;
-            Play_google_speech(agent, audio_libelle);
           }
          Json_unref(mqtt_api_message);
        }
