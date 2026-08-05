@@ -94,6 +94,7 @@ set(CPACK_DEB_COMPONENT_INSTALL ON)
 set(CPACK_COMPONENTS_ALL runtime)
 
 set(CPACK_RPM_RUNTIME_PACKAGE_NAME "abls-agent-audio")
+set(CPACK_RPM_RUNTIME_PACKAGE_GROUP "abls")
 set(CPACK_RPM_RUNTIME_PACKAGE_SUMMARY "Abls-Habitat Audio runtime")
 set(CPACK_RPM_RUNTIME_PACKAGE_REQUIRES "glib2, json-glib, abls-libs, abls-agent-libs, mpg123, wireplumber, python3-gtts")
 set(CPACK_RPM_RUNTIME_FILE_NAME "abls-agent-audio-${PROJECT_VERSION}-${CPACK_PACKAGE_RELEASE}.rpm")
