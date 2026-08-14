@@ -8,7 +8,7 @@ if [ "$(whoami)" != "root" ]
    exit 1
 fi
 
-groupadd abls || true
+groupadd -f abls 2>/dev/null || true
 
 if [ "$SOCLE" = "fedora" ]
  then
@@ -23,7 +23,8 @@ fi
 if [ "$SOCLE" = "debian" ] || [ "$SOCLE" = "raspbian" ] || [ "$SOCLE" = "ubuntu" ]
  then
   echo "Configuring ABLS APT repository"
-  curl -fsSL https://pkgs.abls-habitat.fr/rpms/keys/RPM-GPG-KEY-ABLS | gpg --dearmor -o /usr/share/keyrings/abls-archive-keyring.gpg
+  mkdir -p /etc/apt/keyrings
+  curl -fsSL https://pkgs.abls-habitat.fr/rpms/keys/RPM-GPG-KEY-ABLS | gpg --dearmor --yes -o /etc/apt/keyrings/abls-archive-keyring.gpg
   curl -fsSL https://pkgs.abls-habitat.fr/abls-deb.sources -o /etc/apt/sources.list.d/abls-pkgs.sources
 
   apt update -y
