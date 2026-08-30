@@ -1,17 +1,15 @@
 [Unit]
 Description=ABLS Agent Audio (%i)
-Wants=network-online.target
-After=network-online.target
+PartOf=graphical-session.target
+After=graphical-session.target wireplumber.service
 
 [Service]
 Type=simple
 ExecStart=/usr/bin/abls-agent-audio --agent-tech-id %i
-DynamicUser=yes
-SupplementaryGroups=abls audio
 StateDirectory=abls-agent-audio/%i
 WorkingDirectory=%S/abls-agent-audio/%i
 Restart=on-failure
 RestartSec=5s
 
 [Install]
-WantedBy=multi-user.target
+WantedBy=graphical-session.target
