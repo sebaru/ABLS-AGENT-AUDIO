@@ -55,16 +55,17 @@ static void Play_google_speech( const gchar *audio_libelle )
     }
 
    Info(__func__, Agent->agent_classe, Agent->agent_tech_id, LOG_INFO, "Running mpg123 '%s'", filename);
-   Run_shell ("mpg123 \"%s\"", filename);
+   Run_shell ( "mpg123 --volume %d \"%s\"",
+               (Agent->systemd_is_user ? Agent_config_get_int( Agent, "volume" ) : 100), filename );
 
    Agent_send_comm_to_master(Agent, TRUE);
  }
 /******************************************************************************************************************************/
-/* Audio_set_volume: Configure le volume de sortie audio                                                                      */
+/* Audio_set_global_volume: Configure le volume de sortie audio                                                               */
 /* Entrée: le volume à configurer (0-100)                                                                                     */
 /* Sortie: aucune                                                                                                             */
 /******************************************************************************************************************************/
-static void Audio_set_volume( guint volume )
+static void Audio_set_global_volume( guint volume )
  { if (volume > 100) volume = 100;
 
    Run_shell ( "wpctl set-volume @DEFAULT_AUDIO_SINK@ %d%%", volume);
@@ -100,7 +101,7 @@ gint main(gint argc, gchar *argv[])
    Agent = Agent_init(argv[0], "audio", ABLS_AGENT_AUDIO_VERSION, sizeof(struct ABLS_AUDIO_VARS), argc, argv);
    Agent_vars = Agent->vars;
 
-   Audio_set_volume( Agent_config_get_int( Agent, "volume" ) );
+   if (Agent->systemd_is_user == FALSE) Audio_set_global_volume( Agent_config_get_int( Agent, "volume" ) );
    Subscribe_audio_zones( Agent_config_get_array ( Agent, "audio_zones" ) );
 
    Play_google_speech( "Module audio démarré" );
