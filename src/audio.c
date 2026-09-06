@@ -26,6 +26,17 @@
  struct ABLS_AUDIO_VARS *Agent_vars = NULL;                                             /* Structure des variables de l'agent */
 
 /******************************************************************************************************************************/
+/* Audio_set_global_volume: Configure le volume de sortie audio                                                               */
+/* Entrée: le volume à configurer (0-100)                                                                                     */
+/* Sortie: aucune                                                                                                             */
+/******************************************************************************************************************************/
+static void Audio_set_global_volume( guint volume )
+ { if (volume > 100) volume = 100;
+
+   Run_shell ( "wpctl set-volume @DEFAULT_AUDIO_SINK@ %d%%", volume);
+   Info(__func__, Agent->agent_classe, Agent->agent_tech_id, LOG_NOTICE, "Volume set to %d", volume);
+ }
+/******************************************************************************************************************************/
 /* Play_google_speech: Génère ou lit un message audio à partir d'un libellé                                                   */
 /* Entrée: la structure agent et le libellé audio                                                                             */
 /* Sortie: aucune                                                                                                             */
@@ -36,6 +47,8 @@ static void Play_google_speech( const gchar *audio_libelle )
    struct stat st;
 
    if (!audio_libelle || !*audio_libelle) return;
+
+   Audio_set_global_volume( Agent_config_get_int( Agent, "volume" ) );
 
    gchar *language = Agent_config_get_string ( Agent, "language" );
    if (!language || !*language) language = AUDIO_DEFAULT_LANGUAGE;
@@ -55,21 +68,9 @@ static void Play_google_speech( const gchar *audio_libelle )
     }
 
    Info(__func__, Agent->agent_classe, Agent->agent_tech_id, LOG_INFO, "Running mpg123 '%s'", filename);
-   Run_shell ( "mpg123 --volume %d \"%s\"",
-               (Agent->systemd_is_user ? Agent_config_get_int( Agent, "volume" ) : 100), filename );
+   Run_shell ( "mpg123 \"%s\"", filename );
 
    Agent_send_comm_to_master(Agent, TRUE);
- }
-/******************************************************************************************************************************/
-/* Audio_set_global_volume: Configure le volume de sortie audio                                                               */
-/* Entrée: le volume à configurer (0-100)                                                                                     */
-/* Sortie: aucune                                                                                                             */
-/******************************************************************************************************************************/
-static void Audio_set_global_volume( guint volume )
- { if (volume > 100) volume = 100;
-
-   Run_shell ( "wpctl set-volume @DEFAULT_AUDIO_SINK@ %d%%", volume);
-   Info(__func__, Agent->agent_classe, Agent->agent_tech_id, LOG_NOTICE, "Volume set to %d", volume);
  }
 /******************************************************************************************************************************/
 /* Subscribe_audio_zones: Souscrit l'agent aux zones audio configurées                                                        */
@@ -84,11 +85,13 @@ static void Subscribe_audio_zones( JsonArray *audio_zones )
          if (audio_zone_name)
           { Info(__func__, Agent->agent_classe, Agent->agent_tech_id, LOG_NOTICE, "Listening to AudioZone '%s'", audio_zone_name);
             Mqtt_subscribe(Agent->mqtt_local, "AUDIO_ZONE/%s", audio_zone_name);
+            Mqtt_subscribe(Agent->mqtt_api,   "%s/AUDIO_ZONE/%s/TEST", Agent->domain_uuid, audio_zone_name);
           }
        }
     }
    Info(__func__, Agent->agent_classe, Agent->agent_tech_id, LOG_NOTICE, "Listening to AudioZone 'ALL'");
    Mqtt_subscribe(Agent->mqtt_local, "AUDIO_ZONE/ALL" );                               /* Par défaut, subscribe to zone 'ALL' */
+   Mqtt_subscribe(Agent->mqtt_api,   "%s/AUDIO_ZONE/ALL/TEST", Agent->domain_uuid);
  }
 /******************************************************************************************************************************/
 /* main: Initialise l'agent audio puis traite la boucle principale                                                            */
@@ -101,7 +104,6 @@ gint main(gint argc, gchar *argv[])
    Agent = Agent_init(argv[0], "audio", ABLS_AGENT_AUDIO_VERSION, sizeof(struct ABLS_AUDIO_VARS), argc, argv);
    Agent_vars = Agent->vars;
 
-   if (Agent->systemd_is_user == FALSE) Audio_set_global_volume( Agent_config_get_int( Agent, "volume" ) );
    Subscribe_audio_zones( Agent_config_get_array ( Agent, "audio_zones" ) );
 
    Play_google_speech( "Module audio démarré" );
@@ -132,8 +134,16 @@ gint main(gint argc, gchar *argv[])
       JsonNode *mqtt_api_message;
       while ((mqtt_api_message = Agent_get_mqtt_api_message(Agent)) != NULL)
        { if ( Mqtt_topic_is ( mqtt_api_message, 4, "+", "AGENT", Agent->agent_tech_id, "TEST" ) )
-          { Info(__func__, Agent->agent_classe, Agent->agent_tech_id, LOG_NOTICE, "Saying 'test'");
-            Play_google_speech( "Ceci est un test");
+          { gchar chaine[256];
+            g_snprintf ( chaine, sizeof(chaine), "Ceci est un test de diffusion de l'agent '%s'", Agent->agent_tech_id );
+            Info(__func__, Agent->agent_classe, Agent->agent_tech_id, LOG_NOTICE, "Test from Master. Saying '%s'", chaine);
+            Play_google_speech( "Ceci est un test de diffusion de l'agent audio");
+          }
+         else if ( Mqtt_topic_is ( mqtt_api_message, 4, "+", "AUDIO_ZONE", "+", "TEST" ) )
+          { gchar chaine[256];
+            g_snprintf ( chaine, sizeof(chaine), "Ceci est un test de diffusion de la zone audio '%s'", Mqtt_get_topic_lvl ( mqtt_api_message, 2 ) );
+            Info(__func__, Agent->agent_classe, Agent->agent_tech_id, LOG_NOTICE, "Test from API. Saying '%s'", chaine);
+            Play_google_speech( chaine );
           }
          Json_unref(mqtt_api_message);
        }
