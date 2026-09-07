@@ -30,81 +30,87 @@
 /* Entrée: le volume à configurer (0-100)                                                                                     */
 /* Sortie: aucune                                                                                                             */
 /******************************************************************************************************************************/
-static void Audio_set_global_volume( guint volume )
- { if (volume > 100) volume = 100;
+ static void Audio_set_global_volume( guint volume )
+  { if (volume > 100) volume = 100;
 
-   Run_shell ( "wpctl set-volume @DEFAULT_AUDIO_SINK@ %d%%", volume);
-   Info(__func__, Agent->agent_classe, Agent->agent_tech_id, LOG_NOTICE, "Volume set to %d", volume);
- }
+    Run_shell ( "wpctl set-volume @DEFAULT_AUDIO_SINK@ %d%%", volume);
+    Info(__func__, Agent->agent_classe, Agent->agent_tech_id, LOG_NOTICE, "Volume set to %d", volume);
+  }
 /******************************************************************************************************************************/
 /* Play_google_speech: Génère ou lit un message audio à partir d'un libellé                                                   */
 /* Entrée: la structure agent et le libellé audio                                                                             */
 /* Sortie: aucune                                                                                                             */
 /******************************************************************************************************************************/
-static void Play_google_speech( const gchar *audio_libelle )
- { gchar safe_name[256];
-   gchar filename[512];
-   struct stat st;
+ static void Play_google_speech( const gchar *audio_libelle )
+  { gchar safe_name[256];
+    gchar filename[512];
+    struct stat st;
 
-   if (!audio_libelle || !*audio_libelle) return;
+    if (!audio_libelle || !*audio_libelle) return;
 
-   Audio_set_global_volume( Agent_config_get_int( Agent, "volume" ) );
+    Audio_set_global_volume( Agent_config_get_int( Agent, "volume" ) );
 
-   gchar *language = Agent_config_get_string ( Agent, "language" );
-   if (!language || !*language) language = AUDIO_DEFAULT_LANGUAGE;
+    gchar *language = Agent_config_get_string ( Agent, "language" );
+    if (!language || !*language) language = AUDIO_DEFAULT_LANGUAGE;
 
-   Info(__func__, Agent->agent_classe, Agent->agent_tech_id, LOG_NOTICE, "Sending '%s'", audio_libelle);
+    Info(__func__, Agent->agent_classe, Agent->agent_tech_id, LOG_NOTICE, "Sending '%s'", audio_libelle);
 
-   g_snprintf(safe_name, sizeof(safe_name), "%s", audio_libelle);
-   g_strcanon(safe_name, "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789abcdefghijklmnopqrstuvwxyz_", '_');
-   if (!safe_name[0]) g_snprintf(safe_name, sizeof(safe_name), "speech");
+    g_snprintf(safe_name, sizeof(safe_name), "%s", audio_libelle);
+    g_strcanon(safe_name, "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789abcdefghijklmnopqrstuvwxyz_", '_');
+    if (!safe_name[0]) g_snprintf(safe_name, sizeof(safe_name), "speech");
 
-   g_mkdir_with_parents("audio", 0755);
-   g_snprintf(filename, sizeof(filename), "audio/%s.mp3", safe_name);
+    g_mkdir_with_parents("audio", 0755);
+    g_snprintf(filename, sizeof(filename), "audio/%s.mp3", safe_name);
 
-   if (stat(filename, &st) == -1)
-    { Info(__func__, Agent->agent_classe, Agent->agent_tech_id, LOG_NOTICE, "Creating file '%s'", filename);
-      Run_shell ( "gtts-cli -l %s \"%s\" -o \"%s\"", language, audio_libelle, filename);
-    }
+    if (stat(filename, &st) == -1)
+     { Info(__func__, Agent->agent_classe, Agent->agent_tech_id, LOG_NOTICE, "Creating file '%s'", filename);
+       Run_shell ( "gtts-cli -l %s \"%s\" -o \"%s\"", language, audio_libelle, filename);
+     }
 
-   Info(__func__, Agent->agent_classe, Agent->agent_tech_id, LOG_INFO, "Running mpg123 '%s'", filename);
-   Run_shell ( "mpg123 \"%s\"", filename );
+    Info(__func__, Agent->agent_classe, Agent->agent_tech_id, LOG_INFO, "Running mpg123 '%s'", filename);
+    Run_shell ( "mpg123 \"%s\"", filename );
 
-   Agent_send_comm_to_master(Agent, TRUE);
- }
+    Agent_send_comm_to_master(Agent, TRUE);
+  }
 /******************************************************************************************************************************/
 /* Subscribe_audio_zones: Souscrit l'agent aux zones audio configurées                                                        */
 /* Entrée: la structure agent                                                                                                 */
 /* Sortie: aucune                                                                                                             */
 /******************************************************************************************************************************/
-static void Subscribe_audio_zones( JsonArray *audio_zones )
- { if (audio_zones)
-    { for (guint i = 0; i < json_array_get_length(audio_zones); i++)
-       { JsonNode *element = json_array_get_element(audio_zones, i);
-         gchar *audio_zone_name = Json_get_string(element, "audio_zone_name");
-         if (audio_zone_name)
-          { Info(__func__, Agent->agent_classe, Agent->agent_tech_id, LOG_NOTICE, "Listening to AudioZone '%s'", audio_zone_name);
-            Mqtt_subscribe(Agent->mqtt_local, "AUDIO_ZONE/%s", audio_zone_name);
-            Mqtt_subscribe(Agent->mqtt_api,   "%s/AUDIO_ZONE/%s/TEST", Agent->domain_uuid, audio_zone_name);
-          }
-       }
-    }
-   Info(__func__, Agent->agent_classe, Agent->agent_tech_id, LOG_NOTICE, "Listening to AudioZone 'ALL'");
-   Mqtt_subscribe(Agent->mqtt_local, "AUDIO_ZONE/ALL" );                               /* Par défaut, subscribe to zone 'ALL' */
-   Mqtt_subscribe(Agent->mqtt_api,   "%s/AUDIO_ZONE/ALL/TEST", Agent->domain_uuid);
- }
+ static void Subscribe_audio_zones( void )
+  { guint nbr_audio_zones = Agent_config_get_int ( Agent, "nbr_audio_zones" );
+    if (nbr_audio_zones == 0)
+     { Info(__func__, Agent->agent_classe, Agent->agent_tech_id, LOG_NOTICE, "Listening to AudioZone '+'");
+       Mqtt_subscribe(Agent->mqtt_local, "AUDIO_ZONE/+" );                             /* Par défaut, subscribe to zone 'ALL' */
+       Mqtt_subscribe(Agent->mqtt_api,   "%s/AUDIO_ZONE/+/TEST", Agent->domain_uuid);
+       return;
+     }
+
+    JsonArray *audio_zones = Agent_config_get_array ( Agent, "audio_zones" );
+    if (!audio_zones) return;
+    for (guint i = 0; i < nbr_audio_zones; i++)
+     { JsonNode *element = json_array_get_element(audio_zones, i);
+       gchar *audio_zone_name = Json_get_string(element, "audio_zone_name");
+       if (audio_zone_name)
+        { Info( __func__, Agent->agent_classe, Agent->agent_tech_id, LOG_NOTICE,
+                "Listening to AudioZone %d/%d: '%s'", i+1, nbr_audio_zones, audio_zone_name);
+          Mqtt_subscribe(Agent->mqtt_local, "AUDIO_ZONE/%s", audio_zone_name);
+          Mqtt_subscribe(Agent->mqtt_api,   "%s/AUDIO_ZONE/%s/TEST", Agent->domain_uuid, audio_zone_name);
+        }
+     }
+  }
 /******************************************************************************************************************************/
 /* main: Initialise l'agent audio puis traite la boucle principale                                                            */
 /* Entrée: argc et argv                                                                                                       */
 /* Sortie: code de retour du programme                                                                                        */
 /******************************************************************************************************************************/
 gint main(gint argc, gchar *argv[])
- { Config_add_parameter ( "volume",   "0-100",    "Volume de l'agent audio", CONFIG_INT );
-   Config_add_parameter ( "language", "fr, en",   "Langue de l'agent audio", CONFIG_STRING );
+ { Config_add_parameter ( "volume",   "0-100",  "Volume de l'agent audio", CONFIG_INT );
+   Config_add_parameter ( "language", "fr, en", "Langue de l'agent audio", CONFIG_STRING );
    Agent = Agent_init(argv[0], "audio", ABLS_AGENT_AUDIO_VERSION, sizeof(struct ABLS_AUDIO_VARS), argc, argv);
    Agent_vars = Agent->vars;
 
-   Subscribe_audio_zones( Agent_config_get_array ( Agent, "audio_zones" ) );
+   Subscribe_audio_zones();
 
    Play_google_speech( "Module audio démarré" );
    Agent_send_comm_to_master(Agent, TRUE);

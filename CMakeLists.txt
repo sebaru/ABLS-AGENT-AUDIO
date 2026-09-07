@@ -65,22 +65,6 @@ install(TARGETS abls-agent-audio
 )
 
 execute_process(
-  COMMAND pkg-config --variable=systemdsystemunitdir systemd
-  OUTPUT_VARIABLE ABLS_SYSTEMD_UNIT_INSTALL_DIR
-  OUTPUT_STRIP_TRAILING_WHITESPACE
-  ERROR_QUIET
-)
-
-if(NOT ABLS_SYSTEMD_UNIT_INSTALL_DIR)
-  set(ABLS_SYSTEMD_UNIT_INSTALL_DIR "${CMAKE_INSTALL_PREFIX}/lib/systemd/system")
-endif()
-
-install(FILES packaging/systemd/abls-agent-audio@.service
-  DESTINATION ${ABLS_SYSTEMD_UNIT_INSTALL_DIR}
-  COMPONENT runtime
-)
-
-execute_process(
   COMMAND pkg-config --variable=systemduserunitdir systemd
   OUTPUT_VARIABLE ABLS_SYSTEMD_USER_UNIT_INSTALL_DIR
   OUTPUT_STRIP_TRAILING_WHITESPACE
