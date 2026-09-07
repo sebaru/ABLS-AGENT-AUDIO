@@ -25,6 +25,19 @@ Expected API config fields:
 ./build.sh
 ```
 
+## Systemd user service
+
+The audio agent is installed as a user service template for access to the user audio session:
+
+```sh
+sudo systemctl --global enable abls-agent-audio@AUDIO.service
+loginctl enable-linger <user>
+sudo -iu <user> systemctl --user daemon-reload
+sudo -iu <user> systemctl --user start abls-agent-audio@AUDIO.service
+```
+
+`systemctl --global enable` only installs the default enablement for user managers; start the unit with `systemctl --user` for the account that owns the audio session.
+
 ## Packaging RPM
 
 ```sh
