@@ -8,8 +8,6 @@ if [ "$(whoami)" != "root" ]
    exit 1
 fi
 
-groupadd -f abls 2>/dev/null || true
-
 if [ "$SOCLE" = "fedora" ]
  then
   echo "Installing RPM-based dependencies"
