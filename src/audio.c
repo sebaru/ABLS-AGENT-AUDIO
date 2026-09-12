@@ -142,7 +142,7 @@ gint main(gint argc, gchar *argv[])
        { if ( Mqtt_topic_is ( mqtt_api_message, 4, "+", "AGENT", Agent->agent_tech_id, "TEST" ) )
           { gchar chaine[256];
             g_snprintf ( chaine, sizeof(chaine), "Ceci est un test de diffusion de l'agent '%s'", Agent->agent_tech_id );
-            Info(__func__, Agent->agent_classe, Agent->agent_tech_id, LOG_NOTICE, "Test from Master. Saying '%s'", chaine);
+            Info(__func__, Agent->agent_classe, Agent->agent_tech_id, LOG_NOTICE, "Agent Test from API. Saying '%s'", chaine);
             Play_google_speech( "Ceci est un test de diffusion de l'agent audio");
           }
          else if ( Mqtt_topic_is ( mqtt_api_message, 4, "+", "AUDIO_ZONE", "+", "TEST" ) )
