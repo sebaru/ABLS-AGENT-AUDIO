@@ -59,8 +59,7 @@
     g_strcanon(safe_name, "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789abcdefghijklmnopqrstuvwxyz_", '_');
     if (!safe_name[0]) g_snprintf(safe_name, sizeof(safe_name), "speech");
 
-    g_mkdir_with_parents("audio", 0755);
-    g_snprintf(filename, sizeof(filename), "audio/%s.mp3", safe_name);
+    g_snprintf(filename, sizeof(filename), "%s.mp3", safe_name);
 
     if (stat(filename, &st) == -1)
      { Info(__func__, Agent->agent_classe, Agent->agent_tech_id, LOG_NOTICE, "Creating file '%s'", filename);
