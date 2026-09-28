@@ -34,7 +34,7 @@
   { if (volume > 100) volume = 100;
 
     Run_shell ( "wpctl set-volume @DEFAULT_AUDIO_SINK@ %d%%", volume);
-    Info(__func__, Agent->agent_classe, Agent->agent_tech_id, LOG_NOTICE, "Volume set to %d", volume);
+    Info(__func__, Agent_get_classe ( Agent ), Agent_get_tech_id ( Agent ), LOG_NOTICE, "Volume set to %d", volume);
   }
 /******************************************************************************************************************************/
 /* Play_google_speech: Génère ou lit un message audio à partir d'un libellé                                                   */
@@ -53,7 +53,7 @@
     gchar *language = Agent_config_get_string ( Agent, "language" );
     if (!language || !*language) language = AUDIO_DEFAULT_LANGUAGE;
 
-    Info(__func__, Agent->agent_classe, Agent->agent_tech_id, LOG_NOTICE, "Sending '%s'", audio_libelle);
+    Info(__func__, Agent_get_classe ( Agent ), Agent_get_tech_id ( Agent ), LOG_NOTICE, "Sending '%s'", audio_libelle);
 
     g_snprintf(safe_name, sizeof(safe_name), "%s", audio_libelle);
     g_strcanon(safe_name, "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789abcdefghijklmnopqrstuvwxyz_", '_');
@@ -62,11 +62,11 @@
     g_snprintf(filename, sizeof(filename), "%s.mp3", safe_name);
 
     if (stat(filename, &st) == -1)
-     { Info(__func__, Agent->agent_classe, Agent->agent_tech_id, LOG_NOTICE, "Creating file '%s'", filename);
+     { Info(__func__, Agent_get_classe ( Agent ), Agent_get_tech_id ( Agent ), LOG_NOTICE, "Creating file '%s'", filename);
        Run_shell ( "gtts-cli -l %s \"%s\" -o \"%s\"", language, audio_libelle, filename);
      }
 
-    Info(__func__, Agent->agent_classe, Agent->agent_tech_id, LOG_INFO, "Running mpg123 '%s'", filename);
+    Info(__func__, Agent_get_classe ( Agent ), Agent_get_tech_id ( Agent ), LOG_INFO, "Running mpg123 '%s'", filename);
     Run_shell ( "mpg123 \"%s\"", filename );
 
     Agent_send_comm_to_master(Agent, TRUE);
@@ -79,9 +79,9 @@
  static void Subscribe_audio_zones( void )
   { guint nbr_audio_zones = Agent_config_get_int ( Agent, "nbr_audio_zones" );
     if (nbr_audio_zones == 0)
-     { Info(__func__, Agent->agent_classe, Agent->agent_tech_id, LOG_NOTICE, "Listening to AudioZone '+'");
-       Mqtt_subscribe(Agent->mqtt_local, "AUDIO_ZONE/+" );                             /* Par défaut, subscribe to zone 'ALL' */
-       Mqtt_subscribe(Agent->mqtt_api,   "%s/AUDIO_ZONE/+/TEST", Agent->domain_uuid);
+     { Info(__func__, Agent_get_classe ( Agent ), Agent_get_tech_id ( Agent ), LOG_NOTICE, "Listening to AudioZone '+'");
+       Agent_subscribe_mqtt_local ( Agent, "AUDIO_ZONE/+" );                             /* Par défaut, subscribe to zone 'ALL' */
+       Agent_subscribe_mqtt_api ( Agent,   "%s/AUDIO_ZONE/+/TEST", Agent_get_domain_uuid ( Agent ));
        return;
      }
 
@@ -91,10 +91,10 @@
      { JsonNode *element = json_array_get_element(audio_zones, i);
        gchar *audio_zone_name = Json_get_string(element, "audio_zone_name");
        if (audio_zone_name)
-        { Info( __func__, Agent->agent_classe, Agent->agent_tech_id, LOG_NOTICE,
+        { Info( __func__, Agent_get_classe ( Agent ), Agent_get_tech_id ( Agent ), LOG_NOTICE,
                 "Listening to AudioZone %d/%d: '%s'", i+1, nbr_audio_zones, audio_zone_name);
-          Mqtt_subscribe(Agent->mqtt_local, "AUDIO_ZONE/%s", audio_zone_name);
-          Mqtt_subscribe(Agent->mqtt_api,   "%s/AUDIO_ZONE/%s/TEST", Agent->domain_uuid, audio_zone_name);
+          Agent_subscribe_mqtt_local ( Agent, "AUDIO_ZONE/%s", audio_zone_name);
+          Agent_subscribe_mqtt_api   ( Agent,   "%s/AUDIO_ZONE/%s/TEST", Agent_get_domain_uuid ( Agent ), audio_zone_name);
         }
      }
   }
@@ -107,7 +107,7 @@ gint main(gint argc, gchar *argv[])
  { Config_add_parameter ( "volume",   "0-100",  "Volume de l'agent audio", CONFIG_INT );
    Config_add_parameter ( "language", "fr, en", "Langue de l'agent audio", CONFIG_STRING );
    Agent = Agent_init(argv[0], "audio", ABLS_AGENT_AUDIO_VERSION, sizeof(struct ABLS_AUDIO_VARS), argc, argv);
-   Agent_vars = Agent->vars;
+   Agent_vars = Agent_get_vars ( Agent );
 
    Subscribe_audio_zones();
 
@@ -116,7 +116,7 @@ gint main(gint argc, gchar *argv[])
 
    Agent_is_ready ( Agent );
 
-   while (Agent->Agent_run == AGENT_IS_RUNNING)
+   while (Agent_is_running ( Agent ))
     { Agent_loop(Agent);
 /****************************************************** Ecoute du master ******************************************************/
       JsonNode *mqtt_local_message;
@@ -126,7 +126,7 @@ gint main(gint argc, gchar *argv[])
             gchar *audio_libelle = Json_get_string(mqtt_local_message, "audio_libelle");
             time_t now = time(NULL);
 
-            Info( __func__, Agent->agent_classe, Agent->agent_tech_id, LOG_INFO, "Saying '%s' on audio_zone '%s'",
+            Info( __func__, Agent_get_classe ( Agent ), Agent_get_tech_id ( Agent ), LOG_INFO, "Saying '%s' on audio_zone '%s'",
                   audio_libelle, (audio_zone_name ? audio_zone_name : "unknown"));
 
             if (Agent_vars->last_audio + AUDIO_JINGLE < now)
@@ -138,16 +138,16 @@ gint main(gint argc, gchar *argv[])
 /****************************************************** Ecoute de l'api *******************************************************/
       JsonNode *mqtt_api_message;
       while ((mqtt_api_message = Agent_get_mqtt_api_message(Agent)) != NULL)
-       { if ( Mqtt_topic_is ( mqtt_api_message, 4, "+", "AGENT", Agent->agent_tech_id, "TEST" ) )
+       { if ( Mqtt_topic_is ( mqtt_api_message, 4, "+", "AGENT", Agent_get_tech_id ( Agent ), "TEST" ) )
           { gchar chaine[256];
-            g_snprintf ( chaine, sizeof(chaine), "Ceci est un test de diffusion de l'agent '%s'", Agent->agent_tech_id );
-            Info(__func__, Agent->agent_classe, Agent->agent_tech_id, LOG_NOTICE, "Agent Test from API. Saying '%s'", chaine);
+            g_snprintf ( chaine, sizeof(chaine), "Ceci est un test de diffusion de l'agent '%s'", Agent_get_tech_id ( Agent ) );
+            Info(__func__, Agent_get_classe ( Agent ), Agent_get_tech_id ( Agent ), LOG_NOTICE, "Agent Test from API. Saying '%s'", chaine);
             Play_google_speech( "Ceci est un test de diffusion de l'agent audio");
           }
          else if ( Mqtt_topic_is ( mqtt_api_message, 4, "+", "AUDIO_ZONE", "+", "TEST" ) )
           { gchar chaine[256];
             g_snprintf ( chaine, sizeof(chaine), "Ceci est un test de diffusion de la zone audio '%s'", Mqtt_get_topic_lvl ( mqtt_api_message, 2 ) );
-            Info(__func__, Agent->agent_classe, Agent->agent_tech_id, LOG_NOTICE, "Test from API. Saying '%s'", chaine);
+            Info(__func__, Agent_get_classe ( Agent ), Agent_get_tech_id ( Agent ), LOG_NOTICE, "Test from API. Saying '%s'", chaine);
             Play_google_speech( chaine );
           }
          Json_unref(mqtt_api_message);
