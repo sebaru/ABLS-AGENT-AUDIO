@@ -59,8 +59,7 @@
     g_strcanon(safe_name, "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789abcdefghijklmnopqrstuvwxyz_", '_');
     if (!safe_name[0]) g_snprintf(safe_name, sizeof(safe_name), "speech");
 
-    g_mkdir_with_parents("audio", 0755);
-    g_snprintf(filename, sizeof(filename), "audio/%s.mp3", safe_name);
+    g_snprintf(filename, sizeof(filename), "%s.mp3", safe_name);
 
     if (stat(filename, &st) == -1)
      { Info(__func__, Agent->agent_classe, Agent->agent_tech_id, LOG_NOTICE, "Creating file '%s'", filename);
@@ -142,7 +141,7 @@ gint main(gint argc, gchar *argv[])
        { if ( Mqtt_topic_is ( mqtt_api_message, 4, "+", "AGENT", Agent->agent_tech_id, "TEST" ) )
           { gchar chaine[256];
             g_snprintf ( chaine, sizeof(chaine), "Ceci est un test de diffusion de l'agent '%s'", Agent->agent_tech_id );
-            Info(__func__, Agent->agent_classe, Agent->agent_tech_id, LOG_NOTICE, "Test from Master. Saying '%s'", chaine);
+            Info(__func__, Agent->agent_classe, Agent->agent_tech_id, LOG_NOTICE, "Agent Test from API. Saying '%s'", chaine);
             Play_google_speech( "Ceci est un test de diffusion de l'agent audio");
           }
          else if ( Mqtt_topic_is ( mqtt_api_message, 4, "+", "AUDIO_ZONE", "+", "TEST" ) )

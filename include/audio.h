@@ -28,5 +28,8 @@ struct ABLS_AUDIO_VARS
  { time_t last_audio;
  };
 
+ extern struct ABLS_AGENT *Agent;
+ extern struct ABLS_AUDIO_VARS *Agent_vars;
+
 #endif
 /*----------------------------------------------------------------------------------------------------------------------------*/
