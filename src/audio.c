@@ -94,7 +94,7 @@
         { Info( __func__, Agent_get_classe ( Agent ), Agent_get_tech_id ( Agent ), LOG_NOTICE,
                 "Listening to AudioZone %d/%d: '%s'", i+1, nbr_audio_zones, audio_zone_name);
           Agent_subscribe_mqtt_local ( Agent, "AUDIO_ZONE/%s", audio_zone_name);
-          Agent_subscribe_mqtt_api   ( Agent,   "%s/AUDIO_ZONE/%s/TEST", Agent_get_domain_uuid ( Agent ), audio_zone_name);
+          Agent_subscribe_mqtt_api   ( Agent, "%s/AUDIO_ZONE/%s/TEST", Agent_get_domain_uuid ( Agent ), audio_zone_name);
         }
      }
   }
