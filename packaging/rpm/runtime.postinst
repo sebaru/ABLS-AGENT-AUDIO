@@ -1,6 +1,22 @@
 #!/bin/sh
 set -eu
 
+AUDIO_USER=abls-agent-audio
+AUDIO_HOME=/var/lib/abls-agent-audio
+
+if ! getent passwd "$AUDIO_USER" >/dev/null; then
+  useradd --system --user-group --create-home --home-dir "$AUDIO_HOME" \
+    --shell /usr/sbin/nologin --comment "ABLS Agent Audio" "$AUDIO_USER"
+fi
+if getent group audio >/dev/null; then
+  usermod --append --groups audio "$AUDIO_USER"
+fi
+# Fallback to the linger flag file when logind is not running (chroot, image build).
+loginctl enable-linger "$AUDIO_USER" >/dev/null 2>&1 || {
+  mkdir -p /var/lib/systemd/linger
+  touch "/var/lib/systemd/linger/$AUDIO_USER"
+}
+
 if command -v systemctl >/dev/null 2>&1 && [ -d /run/systemd/system ]; then
   systemctl daemon-reload >/dev/null 2>&1 || true
 fi
