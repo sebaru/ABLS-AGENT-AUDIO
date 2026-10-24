@@ -97,6 +97,7 @@ set(CPACK_RPM_RUNTIME_PACKAGE_NAME "abls-agent-audio")
 set(CPACK_RPM_RUNTIME_PACKAGE_GROUP "abls")
 set(CPACK_RPM_RUNTIME_PACKAGE_SUMMARY "Abls-Habitat Audio runtime")
 set(CPACK_RPM_RUNTIME_PACKAGE_REQUIRES "glib2, json-glib, abls-libs, abls-agent-libs, mpg123, wireplumber, python3-gtts")
+set(CPACK_RPM_RUNTIME_PACKAGE_REQUIRES_POST "shadow-utils, systemd")
 set(CPACK_RPM_RUNTIME_FILE_NAME "abls-agent-audio-${PROJECT_VERSION}-${CPACK_PACKAGE_RELEASE}.rpm")
 set(CPACK_RPM_RUNTIME_DEBUGINFO_PACKAGE ON)
 set(CPACK_RPM_RUNTIME_DEBUGINFO_FILE_NAME "RPM-DEFAULT")
@@ -107,7 +108,7 @@ set(CPACK_RPM_RUNTIME_POST_UNINSTALL_SCRIPT_FILE "${CMAKE_SOURCE_DIR}/packaging/
 
 set(ABLS_DEBIAN_GLIB_RUNTIME_DEPEND "libglib2.0-0t64 | libglib2.0-0")
 set(CPACK_DEBIAN_RUNTIME_PACKAGE_NAME "abls-agent-audio")
-set(CPACK_DEBIAN_RUNTIME_PACKAGE_DEPENDS "${ABLS_DEBIAN_GLIB_RUNTIME_DEPEND}, libjson-glib-1.0-0, abls-libs, abls-agent-libs, mpg123, wireplumber, python3-gtts")
+set(CPACK_DEBIAN_RUNTIME_PACKAGE_DEPENDS "${ABLS_DEBIAN_GLIB_RUNTIME_DEPEND}, libjson-glib-1.0-0, abls-libs, abls-agent-libs, mpg123, wireplumber, python3-gtts, passwd, systemd")
 set(CPACK_DEBIAN_RUNTIME_PACKAGE_SHLIBDEPS ON)
 set(CPACK_DEBIAN_RUNTIME_PACKAGE_CONTROL_EXTRA
   "${CMAKE_SOURCE_DIR}/packaging/deb/postinst"
