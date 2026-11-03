@@ -29,6 +29,13 @@ Expected API config fields:
 
 The audio agent is installed as a user service template for access to the user audio session:
 
+The DEB and RPM packages create the `abls-agent-audio` system account with `abls`
+as its primary group, add it to the supplementary `audio` group when available,
+and enable lingering. Package upgrades also migrate existing accounts to the
+`abls` primary group without replacing their supplementary groups.
+Restart the account's user manager after upgrading to apply group changes to
+running services.
+
 ```sh
 sudo systemctl --global enable abls-agent-audio@AUDIO.service
 loginctl enable-linger <user>
