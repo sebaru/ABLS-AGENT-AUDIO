@@ -4,9 +4,14 @@ set -eu
 AUDIO_USER=abls-agent-audio
 AUDIO_HOME=/var/lib/abls-agent-audio
 
+if ! getent group abls >/dev/null; then
+  groupadd --system abls
+fi
 if ! getent passwd "$AUDIO_USER" >/dev/null; then
-  useradd --system --user-group --create-home --home-dir "$AUDIO_HOME" \
+  useradd --system --gid abls --create-home --home-dir "$AUDIO_HOME" \
     --shell /usr/sbin/nologin --comment "ABLS Agent Audio" "$AUDIO_USER"
+else
+  usermod --gid abls "$AUDIO_USER"
 fi
 if getent group audio >/dev/null; then
   usermod --append --groups audio "$AUDIO_USER"
